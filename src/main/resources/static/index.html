@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>PII Detector & Masker</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        h1 {
+            color: #333;
+            text-align: center;
+        }
+
+        textarea {
+            width: 100%;
+            padding: 10px;
+            font-size: 14px;
+            border: 1px solid #ccc;
+            border-radius: 6px;
+            box-sizing: border-box;
+        }
+
+        button {
+            margin-top: 10px;
+            padding: 10px 30px;
+            background: #007bff;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            cursor: pointer;
+            width: 100%;
+        }
+
+        button:hover {
+            background: #0056b3;
+        }
+
+        .card {
+            background: white;
+            border-radius: 8px;
+            padding: 16px;
+            margin-top: 16px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.1);
+        }
+
+        .card h3 {
+            margin: 0 0 10px 0;
+            color: #333;
+        }
+
+        .masked-text {
+            background: #fff3cd;
+            padding: 12px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-word;
+        }
+
+        .counts {
+            display: flex;
+            gap: 12px;
+            flex-wrap: wrap;
+        }
+
+        .badge {
+            padding: 6px 14px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: bold;
+            color: white;
+        }
+
+        .badge.phone   { background: #28a745; }
+        .badge.email   { background: #007bff; }
+        .badge.aadhaar { background: #fd7e14; }
+        .badge.pan     { background: #6f42c1; }
+
+        .ai-box {
+            background: #e8f4fd;
+            border-left: 4px solid #007bff;
+            padding: 12px;
+            border-radius: 0 6px 6px 0;
+            font-size: 14px;
+            line-height: 1.6;
+            white-space: pre-wrap;
+        }
+
+        .loading {
+            color: #888;
+            font-style: italic;
+        }
+
+        .history-link {
+            display: block;
+            text-align: center;
+            margin-top: 20px;
+            color: #007bff;
+            text-decoration: none;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+
+    <h1>🔍 PII Detector & Masker</h1>
+
+    <div class="card">
+        <h3>Enter Text</h3>
+        <textarea id="inputText"
+                  rows="6"
+                  placeholder="Enter text containing PII like phone numbers, emails, Aadhaar, PAN..."></textarea>
+        <button onclick="maskText()">🔒 Detect & Mask PII</button>
+    </div>
+
+    <!-- Masked Result -->
+    <div class="card" id="maskedCard" style="display:none">
+        <h3>🔒 Masked Text</h3>
+        <div class="masked-text" id="maskedText"></div>
+    </div>
+
+    <!-- PII Counts -->
+    <div class="card" id="countsCard" style="display:none">
+        <h3>📊 PII Detected</h3>
+        <div class="counts" id="counts"></div>
+    </div>
+
+    <!-- AI Analysis -->
+    <div class="card" id="aiCard" style="display:none">
+        <h3>🤖 AI Analysis (Groq)</h3>
+        <div class="ai-box" id="aiAnalysis"></div>
+    </div>
+
+    <a href="/history" class="history-link">📋 View Scan History</a>
+
+    <script>
+        async function maskText() {
+
+            const text = document.getElementById("inputText").value;
+
+            if (!text.trim()) {
+                alert("Please enter some text!");
+                return;
+            }
+
+            // Show loading
+            document.getElementById("aiCard").style.display = "block";
+            document.getElementById("aiAnalysis").innerHTML =
+                '<span class="loading">⏳ Analyzing with AI...</span>';
+
+            const response = await fetch("/mask", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ text: text })
+            });
+
+            const data = await response.json();
+
+            // Show masked text
+            document.getElementById("maskedCard").style.display = "block";
+            document.getElementById("maskedText").innerText = data.maskedText;
+
+            // Show counts
+            document.getElementById("countsCard").style.display = "block";
+            document.getElementById("counts").innerHTML = `
+                <span class="badge phone">📞 Phone: ${data.phoneCount}</span>
+                <span class="badge email">📧 Email: ${data.emailCount}</span>
+                <span class="badge aadhaar">🪪 Aadhaar: ${data.aadhaarCount}</span>
+                <span class="badge pan">💳 PAN: ${data.panCount}</span>
+            `;
+
+            // Show AI analysis
+            document.getElementById("aiAnalysis").innerText =
+                data.aiAnalysis || "No AI analysis available";
+        }
+    </script>
+
+</body>
+</html>
